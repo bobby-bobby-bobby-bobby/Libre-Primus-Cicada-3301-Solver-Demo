@@ -1,0 +1,62 @@
+{
+  "search": {
+    "batch_size": 1024,
+    "top_k": 10,
+    "max_key_length": 7,
+    "strategy": "genetic",
+    "beam_width": 100,
+    "genetic": {
+      "population_size": 200,
+      "mutation_rate": 0.15,
+      "crossover_rate": 0.7,
+      "elite_fraction": 0.1
+    },
+    "diversity_reset_interval": 500,
+    "diversity_threshold": 0.1
+  },
+  "constraints": {
+    "modular_multipliers": "prime",
+    "modular_mod_min": 29,
+    "modular_mod_max": 109,
+    "vigenere_key_lengths": [3, 5, 7, 11, 13],
+    "transposition_block_sizes": [3, 5, 7, 11, 13],
+    "offset_min": 0,
+    "offset_max": 28
+  },
+  "scoring": {
+    "weights": {
+      "ioc": 0.25,
+      "ngram": 0.25,
+      "entropy": 0.15,
+      "word_boundary": 0.20,
+      "structural": 0.10,
+      "cross_page": 0.05
+    }
+  },
+  "distributed": {
+    "num_workers": 4,
+    "coordinator_host": "127.0.0.1",
+    "coordinator_port": 5555,
+    "checkpoint_interval": 300,
+    "result_queue_size": 10000,
+    "multi_machine": false
+  },
+  "data": {
+    "lp_repo_url": "https://github.com/rtkd/iddqd",
+    "lp_data_dir": "data/liber_primus",
+    "output_dir": "output",
+    "log_dir": "logs",
+    "checkpoint_dir": "checkpoints"
+  },
+  "gpu": {
+    "enabled": true,
+    "device": "auto",
+    "precision": "float32",
+    "batch_size_auto_tune": true
+  },
+  "pipeline": {
+    "encodings": ["gp", "index", "alt_prime"],
+    "unknown_transform_slots": 2,
+    "max_pipeline_depth": 6
+  }
+}
