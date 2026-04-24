@@ -71,6 +71,7 @@ class TensorEngine:
     def vigenere_shift(self, x, key_vec, mod: int):
         if self.hw.backend == "torch":
             n = x.shape[-1]
+            # Repeat key using manual ceiling-division to cover the full tensor length.
             tiled = key_vec.repeat((n + key_vec.shape[-1] - 1) // key_vec.shape[-1])[:n]
             return (x + tiled) % mod
         if self.hw.backend == "numpy":

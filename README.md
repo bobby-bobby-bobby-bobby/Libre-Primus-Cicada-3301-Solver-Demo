@@ -1,4 +1,4 @@
-# Libre Primus Cicada 3301 Solver Demo
+# Liber Primus Cicada 3301 Solver Demo
 
 Production-oriented, auto-bootstrapping cryptanalysis framework for large-scale search over unsolved Liber Primus pages.
 

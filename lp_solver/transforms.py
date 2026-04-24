@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass, is_dataclass
 from typing import Any, Dict, List, Sequence
 
 from .tensor_ops import TensorEngine
@@ -13,7 +13,8 @@ class Transform:
         raise NotImplementedError
 
     def serialize(self) -> Dict[str, Any]:
-        return {"type": self.__class__.__name__, "params": asdict(self)}
+        params = asdict(self) if is_dataclass(self) else self.__dict__.copy()
+        return {"type": self.__class__.__name__, "params": params}
 
 
 @dataclass

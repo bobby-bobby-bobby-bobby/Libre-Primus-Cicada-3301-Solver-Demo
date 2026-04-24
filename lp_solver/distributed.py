@@ -34,7 +34,7 @@ class Worker:
 
     def run_batch(self, page_tensor, refs: List[Sequence[int]], strategy: str, beam_pool=None) -> List[CandidateResult]:
         candidates = []
-        length = int(page_tensor.shape[-1] if hasattr(page_tensor, "shape") else len(page_tensor))
+        length = page_tensor.shape[-1] if hasattr(page_tensor, "shape") else len(page_tensor)
         if strategy == "grid":
             key_iter = self.factory.grid(length=length, limit=self.config.batch_size)
         elif strategy == "genetic" and beam_pool:
@@ -80,6 +80,18 @@ class SocketWorkerServer:
     def __init__(self, host: str, port: int, worker: Worker) -> None:
         self.host, self.port, self.worker = host, port, worker
 
+    @staticmethod
+    def _recv_exact(conn: socket.socket, n: int) -> bytes:
+        chunks = []
+        remaining = n
+        while remaining > 0:
+            chunk = conn.recv(remaining)
+            if not chunk:
+                raise ConnectionError("socket closed during payload read")
+            chunks.append(chunk)
+            remaining -= len(chunk)
+        return b"".join(chunks)
+
     def serve_forever(self) -> None:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -89,12 +101,15 @@ class SocketWorkerServer:
             while True:
                 conn, _ = s.accept()
                 with conn:
-                    payload = json.loads(conn.recv(1_000_000).decode("utf-8"))
+                    header = self._recv_exact(conn, 8)
+                    size = int.from_bytes(header, "big")
+                    payload = json.loads(self._recv_exact(conn, size).decode("utf-8"))
                     page = payload["page"]
                     refs = payload["refs"]
                     strategy = payload.get("strategy", "random")
                     results = self.worker.run_batch(page, refs, strategy)
-                    conn.sendall(json.dumps([r.__dict__ for r in results]).encode("utf-8"))
+                    body = json.dumps([r.__dict__ for r in results]).encode("utf-8")
+                    conn.sendall(len(body).to_bytes(8, "big") + body)
 
 
 def run_worker_process(worker_id: int, config: RuntimeConfig, page_vals: List[int], ref_vals, strategy: str, out_q: mp.Queue, beam_pool):
@@ -117,6 +132,7 @@ class Coordinator:
 
     def run(self, page_vals: List[int], ref_vals: List[List[int]]) -> List[Dict]:
         beam_pool = []
+        beam_factory = KeyFactory(self.config.constraints, seed=self.config.random_seed + 10_000)
         for it in range(self.config.max_iterations):
             q: mp.Queue = mp.Queue()
             procs = []
@@ -127,7 +143,6 @@ class Coordinator:
                 p = mp.Process(
                     target=run_worker_process,
                     args=(w, self.config, page_vals, ref_vals, strategy, q, beam_pool),
-                    daemon=True,
                 )
                 p.start()
                 procs.append(p)
@@ -154,7 +169,7 @@ class Coordinator:
                 })
 
             beam_pool = [
-                KeyFactory(self.config.constraints).random_key(length=len(page_vals)) for _ in range(min(64, len(self.best) + 1))
+                beam_factory.random_key(length=len(page_vals)) for _ in range(min(64, len(self.best) + 1))
             ]
 
             if it % 10 == 0:

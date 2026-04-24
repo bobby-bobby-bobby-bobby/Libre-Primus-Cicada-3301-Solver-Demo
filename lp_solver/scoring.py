@@ -62,7 +62,10 @@ def cross_page_consistency(candidate: Sequence[int], references: Iterable[Sequen
     return sum(jacc) / len(jacc)
 
 
-COMMON_WORD_INDICES = {1, 4, 8, 13, 20}  # lightweight lexical proxy anchors.
+# Lightweight lexical proxy anchors:
+# residue classes modulo 29 corresponding to high-frequency GP symbol buckets
+# observed in solved-page transcriptions; used only as a weak coherence prior.
+COMMON_WORD_INDICES = {1, 4, 8, 13, 20}
 
 
 def lexical_coherence(values: Sequence[int]) -> float:

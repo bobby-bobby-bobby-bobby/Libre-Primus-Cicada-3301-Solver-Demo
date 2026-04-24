@@ -91,9 +91,13 @@ class KeyFactory:
         return out
 
     def crossover(self, a: CandidateKey, b: CandidateKey) -> CandidateKey:
-        split = self.rng.randint(1, min(len(a.key), len(b.key)) - 1) if min(len(a.key), len(b.key)) > 2 else 1
-        key = a.key[:split] + b.key[split:]
-        table_split = self.rng.randint(1, len(a.unknown_table) - 2)
+        min_len = min(len(a.key), len(b.key))
+        if min_len < 2:
+            key = (a.key if len(a.key) >= len(b.key) else b.key)[:]
+        else:
+            split = self.rng.randint(1, min_len - 1)
+            key = a.key[:split] + b.key[split:]
+        table_split = self.rng.randint(1, len(a.unknown_table) - 1)
         table = a.unknown_table[:table_split] + b.unknown_table[table_split:]
         return CandidateKey(
             a=self.rng.choice([a.a, b.a]),
