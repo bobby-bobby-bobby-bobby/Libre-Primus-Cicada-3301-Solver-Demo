@@ -1,0 +1,26 @@
+{
+  "data_repo_url": "https://github.com/solvers-hub/cicada3301.git",
+  "data_repo_dir": "data/source_repo",
+  "parsed_pages_dir": "data/parsed",
+  "experiments_dir": "experiments",
+  "checkpoints_dir": "experiments/checkpoints",
+  "logs_dir": "experiments/logs",
+  "top_n_per_worker": 32,
+  "worker_processes": 4,
+  "strategy": "beam",
+  "batch_size": 2048,
+  "beam_width": 256,
+  "generations": 60,
+  "random_seed": 3301,
+  "max_iterations": 100,
+  "socket_mode": false,
+  "socket_host": "127.0.0.1",
+  "socket_port": 50991,
+  "constraints": {
+    "modular_primes": [2, 3, 5, 7, 11, 13, 17, 19, 23, 29],
+    "offsets": [-127, -64, -32, -16, -8, -4, -2, -1, 0, 1, 2, 4, 8, 16, 32, 64, 127],
+    "vigenere_min_len": 2,
+    "vigenere_max_len": 12,
+    "transposition_block_sizes": [2, 3, 4, 5, 6, 8, 9, 12]
+  }
+}
