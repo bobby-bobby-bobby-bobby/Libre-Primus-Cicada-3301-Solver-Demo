@@ -3,8 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass, asdict
 from typing import Any, Dict, List, Sequence
 
-import numpy as np
-
 from .tensor_ops import TensorEngine
 
 
@@ -46,6 +44,8 @@ class AtbashVariant(Transform):
     name: str = "atbash_variant"
 
     def apply(self, x, eng: TensorEngine):
+        if eng.hw.backend == "python":
+            return [self.reverse_range - v for v in x]
         return self.reverse_range - x
 
 
@@ -64,13 +64,12 @@ class IndexPermutation(Transform):
     name: str = "index_permutation"
 
     def apply(self, x, eng: TensorEngine):
-        idx = np.array(self.permutation_vector, dtype=np.int64)
         if eng.hw.backend == "torch":
             import torch
 
-            idx_t = torch.tensor(idx, device=eng.hw.device)
+            idx_t = torch.tensor(self.permutation_vector, device=eng.hw.device)
             return eng.permute(x, idx_t)
-        return eng.permute(x, idx)
+        return eng.permute(x, self.permutation_vector)
 
 
 @dataclass
@@ -90,9 +89,14 @@ class UnknownTransformSlot(Transform):
 
             table = torch.tensor(self.substitution_table, dtype=torch.int64, device=eng.hw.device)
             mapped = table[(x % len(self.substitution_table)).long()]
-        else:
+        elif eng.hw.backend == "numpy":
+            import numpy as np
+
             table = np.array(self.substitution_table, dtype=np.int64)
             mapped = table[x % len(self.substitution_table)]
+        else:
+            table = self.substitution_table
+            mapped = [table[v % len(table)] for v in x]
         return eng.mod_affine(mapped, self.affine_a, self.affine_b, self.mod)
 
 
@@ -104,6 +108,8 @@ class NumericToLatin(Transform):
 
     def apply(self, x, eng: TensorEngine):
         # No-op numeric stage; rendering happens outside tensor kernel.
+        if eng.hw.backend == "python":
+            return [v % self.mod for v in x]
         return x % self.mod
 
 

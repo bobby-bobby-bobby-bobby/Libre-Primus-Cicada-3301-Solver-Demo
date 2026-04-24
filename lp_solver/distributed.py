@@ -34,7 +34,7 @@ class Worker:
 
     def run_batch(self, page_tensor, refs: List[Sequence[int]], strategy: str, beam_pool=None) -> List[CandidateResult]:
         candidates = []
-        length = int(page_tensor.shape[-1])
+        length = int(page_tensor.shape[-1] if hasattr(page_tensor, "shape") else len(page_tensor))
         if strategy == "grid":
             key_iter = self.factory.grid(length=length, limit=self.config.batch_size)
         elif strategy == "genetic" and beam_pool:
@@ -45,7 +45,12 @@ class Worker:
         for ck in key_iter:
             pipeline = key_to_pipeline(ck)
             out = pipeline.apply(page_tensor, self.tensor)
-            arr = out.detach().cpu().numpy().astype(int).tolist() if hasattr(out, "detach") else out.astype(int).tolist()
+            if hasattr(out, "detach"):
+                arr = out.detach().cpu().numpy().astype(int).tolist()
+            elif hasattr(out, "astype"):
+                arr = out.astype(int).tolist()
+            else:
+                arr = [int(v) for v in out]
             sb = self.scorer.score(arr, refs)
             candidates.append(
                 CandidateResult(
